@@ -150,6 +150,8 @@ class WP_Object_Cache {
 	var $cache_enabled = true;
 	var $default_expiration = 0;
 
+	var $blog_id = 0;
+
 	public function get_alloptions() {
 		// Check our internal cache, to avoid the more expensive get-multi
 		$key = $this->key( 'alloptions', 'options' );
@@ -348,9 +350,10 @@ class WP_Object_Cache {
 		}
 
 		$ret = true;
-		foreach ( array_keys( $this->mc ) as $group ) {
-			$ret &= $this->mc[ $group ]->flush();
-		}
+
+		$this->set_salt( 'global' );
+		$this->set_salt( $this->blog_id );
+
 		return $ret;
 	}
 
@@ -465,8 +468,10 @@ class WP_Object_Cache {
 
 		if ( false !== array_search( $group, $this->global_groups ) ) {
 			$prefix = $this->global_prefix;
+			$prefix .= ":".$this->get_salt( 'global' );
 		} else {
 			$prefix = $this->blog_prefix;
+			$prefix .= ":".$this->get_salt( $this->blog_id );
 		}
 
 		return preg_replace('/\s+/', '', WP_CACHE_KEY_SALT . ":$prefix$group:$key");
@@ -540,6 +545,28 @@ class WP_Object_Cache {
 		$table_prefix      = $wpdb->prefix;
 		$blog_id           = (int) $blog_id;
 		$this->blog_prefix = ( is_multisite() ? $blog_id : $table_prefix ) . ':';
+		$this->blog_id     = (int) $blog_id;
+	}
+
+	function get_salt( $id, $group = 'default' ) {
+		$key = "salt:$id";
+		if ( ! isset( $this->cache[ $key ] ) ) {
+			$mc    =& $this->get_mc( $group );
+			$value = $mc->get( $key );
+			if ( false === $value ) {
+				$this->set_salt( $id, $group );
+			}
+		}
+
+		return $this->cache[ $key ];
+	}
+
+	function set_salt( $id, $group = 'default' ) {
+		$key   = "salt:$id";
+		$mc    =& $this->get_mc( $group );
+		$value = microtime();
+		$mc->set( $key, $value, false, 0 );
+		$this->cache[ $key ] = $value;
 	}
 
 	function colorize_debug_line($line) {
