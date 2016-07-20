@@ -353,6 +353,7 @@ class WP_Object_Cache {
 
 		$this->set_salt( 'global' );
 		$this->set_salt( $this->blog_id );
+		$this->set_salt( 0 );
 
 		return $ret;
 	}
