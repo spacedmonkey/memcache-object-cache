@@ -351,9 +351,8 @@ class WP_Object_Cache {
 
 		$ret = true;
 
-		$this->set_salt( 'global' );
+		$this->set_salt();
 		$this->set_salt( $this->blog_id );
-		$this->set_salt( 0 );
 
 		return $ret;
 	}
@@ -469,7 +468,7 @@ class WP_Object_Cache {
 
 		if ( false !== array_search( $group, $this->global_groups ) ) {
 			$prefix = $this->global_prefix;
-			$prefix .= ":".$this->get_salt( 'global' );
+			$prefix .= ":".$this->get_salt( );
 		} else {
 			$prefix = $this->blog_prefix;
 			$prefix .= ":".$this->get_salt( $this->blog_id );
@@ -550,6 +549,9 @@ class WP_Object_Cache {
 	}
 
 	function get_salt( $id, $group = 'default' ) {
+		if ( empty( $id ) ) {
+			$id = 'global';
+		}
 		$key = "salt:$id";
 		if ( ! isset( $this->cache[ $key ] ) ) {
 			$mc    =& $this->get_mc( $group );
@@ -563,6 +565,9 @@ class WP_Object_Cache {
 	}
 
 	function set_salt( $id, $group = 'default' ) {
+		if ( empty( $id ) ) {
+			$id = 'global';
+		}
 		$key   = "salt:$id";
 		$mc    =& $this->get_mc( $group );
 		$value = microtime();
